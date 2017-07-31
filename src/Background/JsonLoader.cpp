@@ -66,10 +66,13 @@ void JsonLoader::parseBackground(
     BackgroundMap& map_back,
     Backgrounds& backgrounds) {
 
-  auto [background, index] = backgrounds.addBackground(id);
+  auto tuple_background = backgrounds.addBackground(id);
+  Background& background = std::get<0>(tuple_background);
+  size_t index = std::get<1>(tuple_background);
 
-  if(auto [not_used, inserted] = map_back.try_emplace(id, index);
-      !inserted) {
+  bool inserted;
+  std::tie(std::ignore, inserted) = map_back.try_emplace(id, index);
+  if(!inserted) {
     throw std::invalid_argument("Duplicate background ids \""s + id + "\""s);
   }
 
@@ -120,18 +123,18 @@ void JsonLoader::parseBackgroundPalette(
   for(const auto& json_entry : *json_palette) {
     PaletteEntry entry;
 
-    if(auto json_color = json_entry.find("color");
-        json_color != json_entry.end()) {
+    auto json_color = json_entry.find("color");
+    if(json_color != json_entry.end()) {
       entry.setColor(Color::fromString(*json_color));
     }
 
-    if(auto json_score = json_entry.find("score");
-        json_score != json_entry.end()) {
+    auto json_score = json_entry.find("score");
+    if(json_score != json_entry.end()) {
       entry.setScore(*json_score);
     }
 
-    if(auto json_fraction = json_entry.find("fraction");
-        json_fraction != json_entry.end()) {
+    auto json_fraction = json_entry.find("fraction");
+    if(json_fraction != json_entry.end()) {
       entry.setFraction(*json_fraction);
     }
 
@@ -166,7 +169,10 @@ void JsonLoader::parseGroup(
     throw std::invalid_argument("Duplicate ids \""s +id + "\""s);
   }
 
-  auto [it_group, inserted] = map_group.try_emplace(id);
+
+  GroupMap::iterator it_group;
+  bool inserted;
+  std::tie(it_group, inserted) = map_group.try_emplace(id);
   if(!inserted) {
     throw std::invalid_argument("Duplicate group ids \""s + id + "\""s);
   }
@@ -191,7 +197,8 @@ void JsonLoader::parseGroupBackground(
         id_back + "\""s);
   }
 
-  auto [not_used, inserted] = group.emplace(it_back->second);
+  bool inserted;
+  std::tie(std::ignore, inserted) = group.emplace(it_back->second);
   if(!inserted) {
     throw std::invalid_argument(
         "Duplicate background \""s + id_back +
@@ -261,17 +268,21 @@ void JsonLoader::parseFilterBackgrounds(
   for(const auto& json_background : *json_backgrounds) {
     std::string id = json_background;
 
-    if(auto it_back = map_back.find(id);
-        it_back != map_back.end()) {
+    auto it_back = map_back.find(id);
+    if(it_back != map_back.end()) {
       filter.addBackground(it_back->second);
-    } else if(auto it_group = map_group.find(id);
-        it_group != map_group.end()) {
+      continue;
+    }
+
+    auto it_group = map_group.find(id);
+    if(it_group != map_group.end()) {
       for(auto background : it_group->second) {
         filter.addBackground(background);
       }
-    } else {
-      throw std::invalid_argument("Filter references undefined "s + id);
+      continue;
     }
+
+    throw std::invalid_argument("Filter references undefined "s + id);
   }
 }
 
