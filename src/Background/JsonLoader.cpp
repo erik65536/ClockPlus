@@ -172,7 +172,7 @@ void JsonLoader::parseGroup(
 
   GroupMap::iterator it_group;
   bool inserted;
-  std::tie(it_group, inserted) = map_group.try_emplace(id);
+  std::tie(it_group, inserted) = map_group.insert(std::make_pair(id, Group()));
   if(!inserted) {
     throw std::invalid_argument("Duplicate group ids \""s + id + "\""s);
   }
