@@ -71,7 +71,7 @@ void JsonLoader::parseBackground(
   size_t index = std::get<1>(tuple_background);
 
   bool inserted;
-  std::tie(std::ignore, inserted) = map_back.try_emplace(id, index);
+  std::tie(std::ignore, inserted) = map_back.insert(std::make_pair(id, index));
   if(!inserted) {
     throw std::invalid_argument("Duplicate background ids \""s + id + "\""s);
   }
