@@ -24,7 +24,9 @@ std::tuple<Background&, size_t> Backgrounds::addBackground(const Id& id) {
 }
 
 Filter& Backgrounds::addFilter(Filter::Priority priority) {
-  return m_filters.emplace(std::make_pair(priority, priority))->second;
+  return m_filters.emplace(
+      std::make_pair<Filter::Priority, Filter::Priority>(
+          std::move(priority), std::move(priority)))->second;
 }
 
 void Backgrounds::clear() {
